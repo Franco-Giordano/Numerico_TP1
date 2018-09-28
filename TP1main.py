@@ -122,6 +122,13 @@ def dumpLista(lista, dumpFile):
 
 	dumpFile.write("\n")
 
+def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile):
+
+	"""Dump de los datos necesarios para graficar"""
+
+	for posicionElemento in range(len(iteracionesTotalesPorW)):
+		dumpFile.write("%d    %.2f\n" % (iteracionesTotalesPorW[posicionElemento], factoresDeRelajacion[posicionElemento]))
+
 
 def main():
 
@@ -141,9 +148,8 @@ def main():
 	if intervalos:
 		print("Se ejecutara el programa para los siguientes intervalos: {} ".format(intervalos))
 
-	#w = float(input("Ingrese el factor de relajacion: "))
-
 	factoresDeRelajacion = [x / 100 for x in range(100, 200, 5)]
+	iteracionesTotalesPorW = []
 
 	for n in intervalos:
 
@@ -175,8 +181,12 @@ def main():
 
 				iteracionesTotales += 1
 
+			iteracionesTotalesPorW.append(iteracionesTotales)
+
 			dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 			dumpFile.write("----------------------------------------------------- \n\n")
+
+		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile)
 
 		dumpFile.close()
 
