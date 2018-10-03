@@ -1,4 +1,7 @@
 from decimal import Decimal
+import matplotlib.pyplot as plt
+import numpy as np
+import math
 
 def crearMatrizK(n):
 
@@ -102,7 +105,7 @@ def normaInfinito(vector):
 
 	return abs(max(vector, key = lambda x: abs(x)))
 
-def criterioConvergencia(actual, anterior, tolerancia = 0.001):
+def criterioConvergencia(actual, anterior, tolerancia = 0.01):
 
 	resta = [actual[i] - anterior[i] for i in range(len(actual))]
 
@@ -137,64 +140,106 @@ def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile):
 def main():
 
 	tomarIntervalos = True
-	intervalos = []
+	#intervalos = []
+	dictDatos = {}
+
+	factoresDeRelajacion = [x / 100.0 for x in range(100, 200, 5)]
+	listaPorN = [(factor, []) for factor in factoresDeRelajacion]
 
 	while tomarIntervalos:
 
 		aux = int(input("Ingrese un tamanio de intervalo mayor a 4, caso contrario finaliza lectura: "))
 
 		if aux > 4:
-			intervalos.append(aux)
+			dictDatos[aux] = listaPorN[:]
 
 		else:
 			tomarIntervalos = False
 
-	if intervalos:
-		print("Se ejecutara el programa para los siguientes intervalos: {} ".format(intervalos))
+	if dictDatos:
+		print("Se ejecutara el programa para los siguientes intervalos: {} ".format(dictDatos.keys()))
 
-	factoresDeRelajacion = [x / 100 for x in range(100, 200, 5)]
 
-	for n in intervalos:
+	for n, tuplaActual in dictDatos.items():
 
 		dumpFile = open("Intervalos_" + str(n) + ".txt", "w")
 
 		iteracionesTotalesPorW = []
 
-		for factorDeRelajacion in factoresDeRelajacion:
+		dimension = n + 1
 
-			dimension = n + 1
+		K = crearMatrizK(n)
+
+		F = crearF(n)
+
+		for factorDeRelajacion, solucionCadaIteracion in tuplaActual:
 
 			anterior = [0.0] * dimension
 
-			K = crearMatrizK(n)
-
-			F = crearF(n)
-
-			actual = SOR(K, F, anterior, factorDeRelajacion)
-
-			iteracionesTotales = 1
+			actual = SOR(K, F, anterior, w=factorDeRelajacion)
+			solucionCadaIteracion.append(actual)
 
 			dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(factorDeRelajacion) + "\n\n")
 			dumpLista(actual, dumpFile)
 
-			while not (criterioConvergencia(actual, anterior)):
+			while not (criterioConvergencia(actual, anterior, tolerancia=0.01)):
 
 				anterior = actual
 				actual = SOR(K, F, anterior, factorDeRelajacion)
 
 				dumpLista(actual, dumpFile)
 
-				iteracionesTotales += 1
+				solucionCadaIteracion.append(actual)
+
+			iteracionesTotales = len(solucionCadaIteracion)
 
 			iteracionesTotalesPorW.append(iteracionesTotales)
 
 			dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 			dumpFile.write("----------------------------------------------------- \n\n")
 
+
+		mejorResultado = hallarWOptimo(tuplaActual)
+		wOptimo, sols = mejorResultado[0], mejorResultado[1]
+
+		print(wOptimo)
+		print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
+
+		plotearW(mejorResultado)
+
 		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile)
 
+		plt.title('W vs. cantidad de iteraciones. N={}'.format(n))
+		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
+		plt.show()
 		dumpFile.close()
 
+
+def distanciaSolucion(K, F, solucion):
+
+	return np.linalg.norm(np.matmul(K, solucion) - np.asmatrix(F))
+
+def restar(x,y):
+	return [x[i] - y[i] for i in range(len(x))]
+
+def calcularP(x0,x1,x2,x3):
+
+	deltax3 = normaInfinito(restar(x3, x2))
+	deltax2 = normaInfinito(restar(x2, x1))
+	deltax1 = normaInfinito(restar(x1, x0))
+
+	return math.log(deltax3 / deltax2) / math.log(deltax2 / deltax1)
+
+def plotearW(datosW):
+	wOptimo, sol = datosW[0], datosW[1][-1]
+
+	plt.title('Desviacion de la viga en funcion de posicion x. N={}, wOptimo={}'.format(len(sol)-1, wOptimo))
+	plt.plot(sol)
+	plt.show()
+
+def hallarWOptimo(tuplaN):
+
+	return min(tuplaN, key = lambda x: len(x[1]))
 
 """K = [[10.0,2.0,6.0], [1.0,10.0,4.0], [2.0,-7.0,-10.0]]
 F = [28.0,7.0,-17.0]
