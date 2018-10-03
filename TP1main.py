@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 def crearMatrizK(n):
 
 	"""Crea la matriz K de coeficientes provenientes de la ecuacion diferencial discretizada."""
@@ -69,15 +71,6 @@ def crearF(n):
 
 	return F
 
-
-"""def SOR(K, F, anterior, w = 1.0):
-
-	actualGS = GaussSeidel(K, F, anterior)
-
-	actual = [anterior[i] * (1.0 - w) + w * actualGS[i] for i in range(len(anterior))]
-
-	return actual"""
-
 def SOR(K, F, anterior, w = 1.0):
 
 	respuesta = anterior[ : ]
@@ -89,21 +82,6 @@ def SOR(K, F, anterior, w = 1.0):
 		respuesta[posicion] = (iteracionGS - respuesta[posicion]) * w + respuesta[posicion]
 
 	return respuesta
-
-"""def GaussSeidel(K, F, anterior):
-
-	resultado = anterior[::]
-
-	for i in range(len(K)):
-
-		factor = 0.0
-		for j in range(len(K)):
-			if j != i:
-				factor += (K[i][j] * resultado[j]) / K[i][i]
-
-		resultado[i] = (F[i] / K[i][i]) - factor
-
-	return resultado"""
 
 def GaussSeidel(K, F, anterior, posicion):
 
@@ -124,7 +102,7 @@ def normaInfinito(vector):
 
 	return abs(max(vector, key = lambda x: abs(x)))
 
-def criterioConvergencia(actual, anterior, tolerancia = 0.01):
+def criterioConvergencia(actual, anterior, tolerancia = 0.001):
 
 	resta = [actual[i] - anterior[i] for i in range(len(actual))]
 
@@ -141,10 +119,10 @@ def dumpLista(lista, dumpFile):
 	for posicionElemento in range(len(lista)):
 
 		if posicionElemento == 0:
-			dumpFile.write("%.04f" % lista[posicionElemento])
+			dumpFile.write("{:.4E}".format(Decimal(lista[posicionElemento])))
 
 		else:
-			dumpFile.write("	" + "%.04f" % lista[posicionElemento])
+			dumpFile.write("	" + "{:.4E}".format(Decimal(lista[posicionElemento])))
 
 	dumpFile.write("\n")
 
