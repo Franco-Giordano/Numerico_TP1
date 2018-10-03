@@ -70,26 +70,27 @@ def crearF(n):
 	return F
 
 
-def SOR(K, F, anterior, w = 1.0):
+"""def SOR(K, F, anterior, w = 1.0):
 
 	actualGS = GaussSeidel(K, F, anterior)
 
 	actual = [anterior[i] * (1.0 - w) + w * actualGS[i] for i in range(len(anterior))]
 
-	return actual
+	return actual"""
 
-def newSOR(K, F, anterior, w =1.0):
+def SOR(K, F, anterior, w = 1.0):
 
-	res = anterior[::]
+	respuesta = anterior[ : ]
 
-	for j in range(len(res)):
-		posGS = singleGaussSeidel(K, F, res, j)
+	for posicion in range(len(respuesta)):
 
-		res[j] = (posGS - res[j])*w + res[j]
+		iteracionGS = GaussSeidel(K, F, respuesta, posicion)
 
-	return res
+		respuesta[posicion] = (iteracionGS - respuesta[posicion]) * w + respuesta[posicion]
 
-def GaussSeidel(K, F, anterior):
+	return respuesta
+
+"""def GaussSeidel(K, F, anterior):
 
 	resultado = anterior[::]
 
@@ -102,21 +103,22 @@ def GaussSeidel(K, F, anterior):
 
 		resultado[i] = (F[i] / K[i][i]) - factor
 
-	return resultado
+	return resultado"""
 
-def singleGaussSeidel(K, F, anterior, pos):
+def GaussSeidel(K, F, anterior, posicion):
 
-	resultado = anterior[::]
+	resultado = anterior[ : ]
 
 	factor = 0.0
 
-	for j in range(len(K)):
-		if j != pos:
-			factor += (K[pos][j] * resultado[j]) / K[pos][pos]
+	for posicionI in range(len(K)):
 
-		resultado[pos] = (F[pos] / K[pos][pos]) - factor
+		if posicionI != posicion:
+			factor += (K[posicion][posicionI] * resultado[posicionI]) / K[posicion][posicion]
 
-	return resultado[pos]
+		resultado[posicion] = (F[posicion] / K[posicion][posicion]) - factor
+
+	return resultado[posicion]
 
 def normaInfinito(vector):
 
@@ -173,23 +175,24 @@ def main():
 		print("Se ejecutara el programa para los siguientes intervalos: {} ".format(intervalos))
 
 	factoresDeRelajacion = [x / 100 for x in range(100, 200, 5)]
-	iteracionesTotalesPorW = []
 
 	for n in intervalos:
 
 		dumpFile = open("Intervalos_" + str(n) + ".txt", "w")
 
+		iteracionesTotalesPorW = []
+
 		for factorDeRelajacion in factoresDeRelajacion:
 
 			dimension = n + 1
 
-			anterior = [0] * dimension
+			anterior = [0.0] * dimension
 
 			K = crearMatrizK(n)
 
 			F = crearF(n)
 
-			actual = newSOR(K, F, anterior, factorDeRelajacion)
+			actual = SOR(K, F, anterior, factorDeRelajacion)
 
 			iteracionesTotales = 1
 
@@ -199,7 +202,7 @@ def main():
 			while not (criterioConvergencia(actual, anterior)):
 
 				anterior = actual
-				actual = newSOR(K, F, anterior, factorDeRelajacion)
+				actual = SOR(K, F, anterior, factorDeRelajacion)
 
 				dumpLista(actual, dumpFile)
 
