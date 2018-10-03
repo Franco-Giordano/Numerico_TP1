@@ -78,6 +78,16 @@ def SOR(K, F, anterior, w = 1.0):
 
 	return actual
 
+def newSOR(K, F, anterior, w =1.0):
+
+	res = anterior[::]
+
+	for j in range(len(res)):
+		posGS = singleGaussSeidel(K, F, res, j)
+
+		res[j] = (posGS - res[j])*w + res[j]
+
+	return res
 
 def GaussSeidel(K, F, anterior):
 
@@ -93,6 +103,20 @@ def GaussSeidel(K, F, anterior):
 		resultado[i] = (F[i] / K[i][i]) - factor
 
 	return resultado
+
+def singleGaussSeidel(K, F, anterior, pos):
+
+	resultado = anterior[::]
+
+	factor = 0.0
+
+	for j in range(len(K)):
+		if j != pos:
+			factor += (K[pos][j] * resultado[j]) / K[pos][pos]
+
+		resultado[pos] = (F[pos] / K[pos][pos]) - factor
+
+	return resultado[pos]
 
 def normaInfinito(vector):
 
@@ -137,7 +161,7 @@ def main():
 
 	while tomarIntervalos:
 
-		aux = int(input("Ingrese un tamaño de intervalo mayor a 4, caso contrario finaliza lectura: "))
+		aux = int(input("Ingrese un tamanio de intervalo mayor a 4, caso contrario finaliza lectura: "))
 
 		if aux > 4:
 			intervalos.append(aux)
@@ -165,7 +189,7 @@ def main():
 
 			F = crearF(n)
 
-			actual = SOR(K, F, anterior, factorDeRelajacion)
+			actual = newSOR(K, F, anterior, factorDeRelajacion)
 
 			iteracionesTotales = 1
 
@@ -175,7 +199,7 @@ def main():
 			while not (criterioConvergencia(actual, anterior)):
 
 				anterior = actual
-				actual = SOR(K, F, anterior, factorDeRelajacion)
+				actual = newSOR(K, F, anterior, factorDeRelajacion)
 
 				dumpLista(actual, dumpFile)
 
