@@ -129,26 +129,63 @@ def dumpLista(lista, dumpFile):
 
 	dumpFile.write("\n")
 
-def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile):
+def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n):
 
 	"""Dump de los datos necesarios para graficar"""
 
+	posicionMaximo = 0
+	minimo = iteracionesTotalesPorW[0]
+
 	for posicionElemento in range(len(iteracionesTotalesPorW)):
+
 		dumpFile.write("%d    %.2f\n" % (iteracionesTotalesPorW[posicionElemento], factoresDeRelajacion[posicionElemento]))
 
+		if iteracionesTotalesPorW[posicionElemento] < minimo:
+			minimo = iteracionesTotalesPorW[posicionElemento]
+			posicionMaximo = posicionElemento
+
+	dumpWOptimos.write("N = %d\n%.2f \n" % (n, factoresDeRelajacion[posicionMaximo]))
+
+def distanciaSolucion(K, F, solucion):
+
+	return np.linalg.norm(np.matmul(K, solucion) - np.asmatrix(F))
+
+def restar(x, y):
+
+	return [x[i] - y[i] for i in range(len(x))]
+
+def calcularP(x0,x1,x2,x3):
+
+	deltax3 = normaInfinito(restar(x3, x2))
+	deltax2 = normaInfinito(restar(x2, x1))
+	deltax1 = normaInfinito(restar(x1, x0))
+
+	return math.log(deltax3 / deltax2) / math.log(deltax2 / deltax1)
+
+def plotearW(datosW):
+
+	wOptimo, sol = datosW[0], datosW[1][-1]
+
+	plt.title('Desviacion de la viga en funcion de posicion x. N = {}, wOptimo = {}'.format(len(sol) - 1, wOptimo))
+	plt.plot(sol)
+	plt.show()
+
+def hallarWOptimo(tuplaN):
+
+	return min(tuplaN, key = lambda x: len(x[1]))
 
 def main():
 
 	tomarIntervalos = True
-	#intervalos = []
 	dictDatos = {}
 
 	factoresDeRelajacion = [x / 100.0 for x in range(100, 200, 5)]
 	listaPorN = [(factor, []) for factor in factoresDeRelajacion]
+	dumpWOptimos = open("WOptimos.txt", "w")
 
 	while tomarIntervalos:
 
-		aux = int(input("Ingrese un tamanio de intervalo mayor a 4, caso contrario finaliza lectura: "))
+		aux = int(input("Ingrese un intervalo mayor a 4, caso contrario finaliza lectura: "))
 
 		if aux > 4:
 			dictDatos[aux] = listaPorN[:]
@@ -157,7 +194,7 @@ def main():
 			tomarIntervalos = False
 
 	if dictDatos:
-		print("Se ejecutara el programa para los siguientes intervalos: {} ".format(dictDatos.keys()))
+		print("Se ejecutara el programa para los siguientes intervalos: {} ".format(list(dictDatos.keys())))
 
 
 	for n, tuplaActual in dictDatos.items():
@@ -176,13 +213,13 @@ def main():
 
 			anterior = [0.0] * dimension
 
-			actual = SOR(K, F, anterior, w=factorDeRelajacion)
+			actual = SOR(K, F, anterior, w = factorDeRelajacion)
 			solucionCadaIteracion.append(actual)
 
 			dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(factorDeRelajacion) + "\n\n")
 			dumpLista(actual, dumpFile)
 
-			while not (criterioConvergencia(actual, anterior, tolerancia=0.01)):
+			while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
 
 				anterior = actual
 				actual = SOR(K, F, anterior, factorDeRelajacion)
@@ -202,51 +239,95 @@ def main():
 		mejorResultado = hallarWOptimo(tuplaActual)
 		wOptimo, sols = mejorResultado[0], mejorResultado[1]
 
-		print(wOptimo)
-		print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
+		#print(wOptimo)
+		#print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
 
 		plotearW(mejorResultado)
 
-		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile)
+		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
 
-		plt.title('W vs. cantidad de iteraciones. N={}'.format(n))
+		plt.title('W vs. cantidad de iteraciones. N = {}'.format(n))
 		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
 		plt.show()
 		dumpFile.close()
 
+	dumpWOptimos.close()
 
-def distanciaSolucion(K, F, solucion):
+	dumpWOptimos = open("WOptimos.txt", "r")
 
-	return np.linalg.norm(np.matmul(K, solucion) - np.asmatrix(F))
 
-def restar(x,y):
-	return [x[i] - y[i] for i in range(len(x))]
+	dictDatos2 = {}
 
-def calcularP(x0,x1,x2,x3):
+	for key in dictDatos.keys():
 
-	deltax3 = normaInfinito(restar(x3, x2))
-	deltax2 = normaInfinito(restar(x2, x1))
-	deltax1 = normaInfinito(restar(x1, x0))
+		for line in dumpWOptimos:
 
-	return math.log(deltax3 / deltax2) / math.log(deltax2 / deltax1)
+			if line == ("N = " + str(key) + "\n"):
+				dictDatos2[key] = (float(dumpWOptimos.readline()), [])
+				break
 
-def plotearW(datosW):
-	wOptimo, sol = datosW[0], datosW[1][-1]
+	for n, tuplaActual in dictDatos2.items():
 
-	plt.title('Desviacion de la viga en funcion de posicion x. N={}, wOptimo={}'.format(len(sol)-1, wOptimo))
-	plt.plot(sol)
+		dimension = n + 1
+
+		K = crearMatrizK(n)
+
+		F = crearF(n)
+
+		print(tuplaActual)
+
+		dumpFile = open("Intervalos_definitivo_" + str(n) + ".txt", "w")
+
+		iteracionesTotalesPorW = []
+
+		anterior = [0.0] * dimension
+
+		actual = SOR(K, F, anterior, w = tuplaActual[0])
+		tuplaActual[1].append(actual)
+
+		dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(tuplaActual[0]) + "\n\n")
+		dumpLista(actual, dumpFile)
+
+		while not (criterioConvergencia(actual, anterior, tolerancia = 0.0001)):
+
+			anterior = actual
+			actual = SOR(K, F, anterior, tuplaActual[0])
+
+			dumpLista(actual, dumpFile)
+			tuplaActual[1].append(actual)
+
+		iteracionesTotales = len(tuplaActual[1])
+
+		iteracionesTotalesPorW.append(iteracionesTotales)
+
+		dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
+		dumpFile.write("----------------------------------------------------- \n\n")
+
+
+	"""mejorResultado = hallarWOptimo(tuplaActual)
+	wOptimo, sols = mejorResultado[0], mejorResultado[1]
+
+	print(wOptimo)
+	print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
+
+	plotearW(mejorResultado)
+
+	dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
+
+	plt.title('W vs. cantidad de iteraciones. N = {}'.format(n))
+	plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
 	plt.show()
+	dumpFile.close()
 
-def hallarWOptimo(tuplaN):
+	plotearW(mejorResultado)
 
-	return min(tuplaN, key = lambda x: len(x[1]))
+	dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
 
-"""K = [[10.0,2.0,6.0], [1.0,10.0,4.0], [2.0,-7.0,-10.0]]
-F = [28.0,7.0,-17.0]
-ant = [1.0,2.0,3.0]
+	plt.title('W vs. cantidad de iteraciones. N = {}'.format(n))
+	plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
+	plt.show()
+	dumpFile.close()"""
 
-for _ in  range(8):
-	ant = SOR(K,F,ant, w=1.033)
-	print(ant)"""
+	dumpWOptimos.close()
 
 main()
