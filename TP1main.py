@@ -166,6 +166,9 @@ def plotearW(datosW, tolerancia):
 
 	wOptimo, sol = datosW[0], datosW[1][-1]
 
+
+	plt.xlabel('Intervalo')
+	plt.ylabel('Desviacion Y [m]')
 	plt.title('Desviacion de la viga en funcion de posicion x. N = {}, wOptimo = {}, Tolerancia = {}.'.format(len(sol) - 1, wOptimo, tolerancia))
 	plt.plot(sol, linestyle='--', marker='o')
 	plt.show()
@@ -231,7 +234,7 @@ def refinarW(n, tuplaActual, iteracionesTotalesPorW):
 
 	tuplaActual.extend(nuevasTuplas)
 
-	tuplaActual = sorted(tuplaActual, key=lambda x: x[0])
+	tuplaActual.sort(key=lambda x: x[0])
 
 	for j in range(len(tuplaActual)):
 		if tuplaActual[j][0] == round(wOptimo/100.0 - 0.05, 2):
@@ -315,16 +318,18 @@ def main():
 			dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 			dumpFile.write("----------------------------------------------------- \n\n")
 
-		refinarW(n, tuplaActual, iteracionesTotalesPorW)
 
-		factoresDeRelajacion = [t[0] for t in tuplaActual]
-		factoresDeRelajacion = sorted(factoresDeRelajacion)
 
-		print(factoresDeRelajacion)
+		#refinarW(n, tuplaActual, iteracionesTotalesPorW)
+		#iteracionesTotalesPorW = [len(x[1]) for x in tuplaActual]
 
-		print(hallarWOptimo(tuplaActual))
+		#factoresDeRelajacion = [t[0] for t in tuplaActual]
 
-		print(iteracionesTotalesPorW, len(factoresDeRelajacion))
+		#print(factoresDeRelajacion)
+
+		#print(hallarWOptimo(tuplaActual))
+
+		#print(len(iteracionesTotalesPorW), len(factoresDeRelajacion))
 
 		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
 
