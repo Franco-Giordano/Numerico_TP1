@@ -136,7 +136,7 @@ def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dum
 	posicionMaximo = 0
 	minimo = iteracionesTotalesPorW[0]
 
-	for posicionElemento in range(len(iteracionesTotalesPorW)):
+	for posicionElemento in range(len(factoresDeRelajacion)):
 
 		dumpFile.write("%d    %.2f\n" % (iteracionesTotalesPorW[posicionElemento], factoresDeRelajacion[posicionElemento]))
 
@@ -162,17 +162,92 @@ def calcularP(x0,x1,x2,x3):
 
 	return math.log(deltax3 / deltax2) / math.log(deltax2 / deltax1)
 
-def plotearW(datosW):
+def plotearW(datosW, tolerancia):
 
 	wOptimo, sol = datosW[0], datosW[1][-1]
 
-	plt.title('Desviacion de la viga en funcion de posicion x. N = {}, wOptimo = {}'.format(len(sol) - 1, wOptimo))
-	plt.plot(sol)
+	plt.title('Desviacion de la viga en funcion de posicion x. N = {}, wOptimo = {}, Tolerancia = {}.'.format(len(sol) - 1, wOptimo, tolerancia))
+	plt.plot(sol, linestyle='--', marker='o')
 	plt.show()
 
 def hallarWOptimo(tuplaN):
 
 	return min(tuplaN, key = lambda x: len(x[1]))
+
+	"""
+	posicionMaximo = 0
+	minimo = len(tuplaN[0][1])
+
+	for posicionElemento in range(len(tuplaN)):
+
+		if len(tuplaN[posicionElemento][1]) < minimo:
+			minimo = len(tuplaN[0][1])
+			posicionMaximo = posicionElemento
+
+
+	return tuplaN[posicionMaximo]"""
+
+
+
+def resolverSistema(n, tuplaActual, dumpFile=None, iteracionesTotalesPorW=[]):
+
+	dimension = n + 1
+
+	K = crearMatrizK(n)
+
+	F = crearF(n)
+
+	anterior = [0.0] * dimension
+
+	actual = SOR(K, F, anterior, w = tuplaActual[0])
+	tuplaActual[1].append(actual)
+
+	if dumpFile:
+		dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(tuplaActual[0]) + "\n\n")
+		dumpLista(actual, dumpFile)
+
+	while not (criterioConvergencia(actual, anterior, tolerancia = 0.0001)):
+
+		anterior = actual
+		actual = SOR(K, F, anterior, tuplaActual[0])
+
+		if dumpFile:
+			dumpLista(actual, dumpFile)
+
+		tuplaActual[1].append(actual)
+
+	iteracionesTotales = len(tuplaActual[1])
+
+	iteracionesTotalesPorW.append(iteracionesTotales)
+
+	return iteracionesTotales
+
+def refinarW(n, tuplaActual, iteracionesTotalesPorW):
+
+	wOptimo = int(hallarWOptimo(tuplaActual)[0] * 100.0)
+	print(wOptimo)
+
+	nuevasTuplas = [(x/100.0, []) for x in range(wOptimo - 4, wOptimo + 5, 1) if x > 0 and x!=wOptimo]
+
+	tuplaActual.extend(nuevasTuplas)
+
+	tuplaActual = sorted(tuplaActual, key=lambda x: x[0])
+
+	for j in range(len(tuplaActual)):
+		if tuplaActual[j][0] == round(wOptimo/100.0 - 0.05, 2):
+			indiceInicio = j
+			break
+
+	#indiceInicio =   #tuplaActual.index((round(wOptimo/100.0 - 0.05, 2), []))
+
+	for i in range(indiceInicio+1, indiceInicio+10):
+
+		if i == indiceInicio + 4:
+			continue
+
+		t = tuplaActual[i]
+		resolverSistema(n, t, None, iteracionesTotalesPorW)
+
 
 def main():
 
@@ -203,58 +278,64 @@ def main():
 
 		iteracionesTotalesPorW = []
 
-		dimension = n + 1
+		for t in tuplaActual:
 
-		K = crearMatrizK(n)
 
-		F = crearF(n)
+		# for factorDeRelajacion, solucionCadaIteracion in tuplaActual:
 
-		for factorDeRelajacion, solucionCadaIteracion in tuplaActual:
+		# 	dimension = n + 1
 
-			anterior = [0.0] * dimension
+		# 	K = crearMatrizK(n)
 
-			actual = SOR(K, F, anterior, w = factorDeRelajacion)
-			solucionCadaIteracion.append(actual)
+		# 	F = crearF(n)
 
-			dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(factorDeRelajacion) + "\n\n")
-			dumpLista(actual, dumpFile)
+		# 	anterior = [0.0] * dimension
 
-			while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
+		# 	actual = SOR(K, F, anterior, w = factorDeRelajacion)
+		# 	solucionCadaIteracion.append(actual)
 
-				anterior = actual
-				actual = SOR(K, F, anterior, factorDeRelajacion)
+		# 	dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(factorDeRelajacion) + "\n\n")
+		# 	dumpLista(actual, dumpFile)
 
-				dumpLista(actual, dumpFile)
+		# 	while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
 
-				solucionCadaIteracion.append(actual)
+		# 		anterior = actual
+		# 		actual = SOR(K, F, anterior, factorDeRelajacion)
 
-			iteracionesTotales = len(solucionCadaIteracion)
+		# 		dumpLista(actual, dumpFile)
 
-			iteracionesTotalesPorW.append(iteracionesTotales)
+		# 		solucionCadaIteracion.append(actual)
+
+		# 	iteracionesTotales = len(solucionCadaIteracion)
+
+		# 	iteracionesTotalesPorW.append(iteracionesTotales)
+
+			iteracionesTotales = resolverSistema(n, t, dumpFile, iteracionesTotalesPorW)
 
 			dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 			dumpFile.write("----------------------------------------------------- \n\n")
 
+		refinarW(n, tuplaActual, iteracionesTotalesPorW)
 
-		mejorResultado = hallarWOptimo(tuplaActual)
-		wOptimo, sols = mejorResultado[0], mejorResultado[1]
+		factoresDeRelajacion = [t[0] for t in tuplaActual]
+		factoresDeRelajacion = sorted(factoresDeRelajacion)
 
-		#print(wOptimo)
-		#print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
+		print(factoresDeRelajacion)
 
-		plotearW(mejorResultado)
+		print(hallarWOptimo(tuplaActual))
+
+		print(iteracionesTotalesPorW, len(factoresDeRelajacion))
 
 		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
 
-		plt.title('W vs. cantidad de iteraciones. N = {}'.format(n))
-		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
+		plt.title('W vs. cantidad de iteraciones. N = {}. Tolerancia = {}'.format(n, 0.01))
+		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW, marker='o')
 		plt.show()
 		dumpFile.close()
 
 	dumpWOptimos.close()
 
 	dumpWOptimos = open("WOptimos.txt", "r")
-
 
 	dictDatos2 = {}
 
@@ -266,68 +347,27 @@ def main():
 				dictDatos2[key] = (float(dumpWOptimos.readline()), [])
 				break
 
+
+	dumpWOptimos.close()
+
+
 	for n, tuplaActual in dictDatos2.items():
-
-		dimension = n + 1
-
-		K = crearMatrizK(n)
-
-		F = crearF(n)
-
-		print(tuplaActual)
 
 		dumpFile = open("Intervalos_definitivo_" + str(n) + ".txt", "w")
 
 		iteracionesTotalesPorW = []
 
-		anterior = [0.0] * dimension
-
-		actual = SOR(K, F, anterior, w = tuplaActual[0])
-		tuplaActual[1].append(actual)
-
-		dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(tuplaActual[0]) + "\n\n")
-		dumpLista(actual, dumpFile)
-
-		while not (criterioConvergencia(actual, anterior, tolerancia = 0.0001)):
-
-			anterior = actual
-			actual = SOR(K, F, anterior, tuplaActual[0])
-
-			dumpLista(actual, dumpFile)
-			tuplaActual[1].append(actual)
-
-		iteracionesTotales = len(tuplaActual[1])
-
-		iteracionesTotalesPorW.append(iteracionesTotales)
+		resolverSistema(n, tuplaActual, dumpFile, iteracionesTotalesPorW)
 
 		dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 		dumpFile.write("----------------------------------------------------- \n\n")
 
+		sols = tuplaActual[1]
+		print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
 
-	"""mejorResultado = hallarWOptimo(tuplaActual)
-	wOptimo, sols = mejorResultado[0], mejorResultado[1]
+		plotearW(tuplaActual, 0.0001)
 
-	print(wOptimo)
-	print(calcularP(sols[-1], sols[-2], sols[-3], sols[-4]))
+		dumpFile.close()
 
-	plotearW(mejorResultado)
-
-	dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
-
-	plt.title('W vs. cantidad de iteraciones. N = {}'.format(n))
-	plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
-	plt.show()
-	dumpFile.close()
-
-	plotearW(mejorResultado)
-
-	dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
-
-	plt.title('W vs. cantidad de iteraciones. N = {}'.format(n))
-	plt.plot(factoresDeRelajacion, iteracionesTotalesPorW)
-	plt.show()
-	dumpFile.close()"""
-
-	dumpWOptimos.close()
 
 main()
