@@ -129,22 +129,22 @@ def dumpLista(lista, dumpFile):
 
 	dumpFile.write("\n")
 
-def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n):
+def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n, wOptimo):
 
 	"""Dump de los datos necesarios para graficar"""
 
-	posicionMaximo = 0
-	minimo = iteracionesTotalesPorW[0]
+	"""posicionMinimo = 0
+	minimo = iteracionesTotalesPorW[0]"""
 
 	for posicionElemento in range(len(factoresDeRelajacion)):
 
 		dumpFile.write("%d    %.2f\n" % (iteracionesTotalesPorW[posicionElemento], factoresDeRelajacion[posicionElemento]))
 
-		if iteracionesTotalesPorW[posicionElemento] < minimo:
+		"""if iteracionesTotalesPorW[posicionElemento] < minimo:
 			minimo = iteracionesTotalesPorW[posicionElemento]
-			posicionMaximo = posicionElemento
+			posicionMinimo = posicionElemento"""
 
-	dumpWOptimos.write("N = %d\n%.2f \n" % (n, factoresDeRelajacion[posicionMaximo]))
+	dumpWOptimos.write("N = %d\n%.2f \n" % (n, wOptimo))
 
 def distanciaSolucion(K, F, solucion):
 
@@ -177,22 +177,7 @@ def hallarWOptimo(tuplaN):
 
 	return min(tuplaN, key = lambda x: len(x[1]))
 
-	"""
-	posicionMaximo = 0
-	minimo = len(tuplaN[0][1])
-
-	for posicionElemento in range(len(tuplaN)):
-
-		if len(tuplaN[posicionElemento][1]) < minimo:
-			minimo = len(tuplaN[0][1])
-			posicionMaximo = posicionElemento
-
-
-	return tuplaN[posicionMaximo]"""
-
-
-
-def resolverSistema(n, tuplaActual, dumpFile=None, iteracionesTotalesPorW=[]):
+def resolverSistema(n, tuplaActual, dumpFile = None, iteracionesTotalesPorW = []):
 
 	dimension = n + 1
 
@@ -209,7 +194,7 @@ def resolverSistema(n, tuplaActual, dumpFile=None, iteracionesTotalesPorW=[]):
 		dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(tuplaActual[0]) + "\n\n")
 		dumpLista(actual, dumpFile)
 
-	while not (criterioConvergencia(actual, anterior, tolerancia = 0.0001)):
+	while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
 
 		anterior = actual
 		actual = SOR(K, F, anterior, tuplaActual[0])
@@ -225,32 +210,54 @@ def resolverSistema(n, tuplaActual, dumpFile=None, iteracionesTotalesPorW=[]):
 
 	return iteracionesTotales
 
+def resolverSistemaRefinado(n, w, dumpFile = None, iteracionesTotalesPorW = []):
+
+	"""Es como la funcion resolverSistema, pero esta se encarga de resolverlo para el refinamiento"""
+
+	dimension = n + 1
+
+	K = crearMatrizK(n)
+
+	F = crearF(n)
+
+	anterior = [0.0] * dimension
+
+	actual = SOR(K, F, anterior, w)
+
+	iteracionesTotales = 1
+
+	while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
+
+		anterior = actual
+		actual = SOR(K, F, anterior, w)
+		iteracionesTotales += 1
+
+	iteracionesTotalesPorW.append(iteracionesTotales)
+
 def refinarW(n, tuplaActual, iteracionesTotalesPorW):
 
+	"""Genera los datos de salida del refinamiento que se hace sobre el w optimo encontrado previamente"""
+
+	iteracionesRefinamiento = []
+
 	wOptimo = int(hallarWOptimo(tuplaActual)[0] * 100.0)
-	print(wOptimo)
 
-	nuevasTuplas = [(x/100.0, []) for x in range(wOptimo - 4, wOptimo + 5, 1) if x > 0 and x!=wOptimo]
+	rangoRefinamiento = [(x / 100.0) for x in range(wOptimo - 4, wOptimo + 5, 1) if x > 0 and x != wOptimo]
 
-	tuplaActual.extend(nuevasTuplas)
+	for i in range(len(rangoRefinamiento)):
+		if i == 0:
+			resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
+			posicionMinimo = i
 
-	tuplaActual.sort(key=lambda x: x[0])
+		else:
+			resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
 
-	for j in range(len(tuplaActual)):
-		if tuplaActual[j][0] == round(wOptimo/100.0 - 0.05, 2):
-			indiceInicio = j
-			break
+			if iteracionesRefinamiento[i] < iteracionesRefinamiento[posicionMinimo]:
+				posicionMinimo = i
 
-	#indiceInicio =   #tuplaActual.index((round(wOptimo/100.0 - 0.05, 2), []))
+	wOptimo = rangoRefinamiento[posicionMinimo]
 
-	for i in range(indiceInicio+1, indiceInicio+10):
-
-		if i == indiceInicio + 4:
-			continue
-
-		t = tuplaActual[i]
-		resolverSistema(n, t, None, iteracionesTotalesPorW)
-
+	return [rangoRefinamiento, iteracionesRefinamiento, wOptimo]
 
 def main():
 
@@ -318,20 +325,11 @@ def main():
 			dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 			dumpFile.write("----------------------------------------------------- \n\n")
 
+		datosRefinamiento = refinarW(n, tuplaActual, iteracionesTotalesPorW)
 
+		plt.plot(datosRefinamiento[0], datosRefinamiento[1], marker='o')
 
-		#refinarW(n, tuplaActual, iteracionesTotalesPorW)
-		#iteracionesTotalesPorW = [len(x[1]) for x in tuplaActual]
-
-		#factoresDeRelajacion = [t[0] for t in tuplaActual]
-
-		#print(factoresDeRelajacion)
-
-		#print(hallarWOptimo(tuplaActual))
-
-		#print(len(iteracionesTotalesPorW), len(factoresDeRelajacion))
-
-		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n)
+		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n, datosRefinamiento[2])
 
 		plt.title('W vs. cantidad de iteraciones. N = {}. Tolerancia = {}'.format(n, 0.01))
 		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW, marker='o')
