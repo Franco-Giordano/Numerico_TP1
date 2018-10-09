@@ -1,16 +1,32 @@
+"""Trabajo Practico N° 1 - Analisis Numerico - Curso Tarela - Grupo 6"""
+
+#Martes 09 de Octubre
+
+#Integrantes:
+#Julian Garcia Delfino - 100784
+#Franco Giordano - 100608
+#Agustin Yanuchausky - 99496
+
 from decimal import Decimal
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+
+def printIntegrantes():
+
+	"""Imprime mensaje inicial"""
+
+	print("Trabajo Practico N° 1 - Analisis Numerico - Curso Tarela - Grupo 6\n")
+	print("Julian Garcia Delfino - 100784\nFranco Giordano - 100608\nAgustin Yanuchausky - 99496\n")
 
 def crearMatrizK(n):
 
 	"""Crea la matriz K de coeficientes provenientes de la ecuacion diferencial discretizada."""
 
 	if n < 5:
-		return [[0.0]*5 for x in range(5)]
+		return [[0.0] * 5 for x in range(5)]
 
-	dimension = n+1
+	dimension = n + 1
 
 	K = [[0.0] * dimension for x in range(dimension)]
 
@@ -30,7 +46,7 @@ def crearMatrizK(n):
 	vectorFijo2 = [1.0] + vectorFijo
 	vectorFijo2[2] += 1
 
-	for i in range(2, n-1):
+	for i in range(2, n - 1):
 
 		offset = i - 2
 
@@ -56,7 +72,9 @@ def x(n, i, L = 1.0):
 
 def f(n, i, k = 1.0, L = 1.0):
 
-	xi = x(n,i)
+	"""Calcula los terminos independientes del vector F en base a la funcion x y q"""
+
+	xi = x(n, i)
 
 	return (q(xi) * (L / n) ** 4) / k
 
@@ -68,13 +86,15 @@ def crearF(n):
 
 	F = [0.0] * dimension
 
-	for i in range(1,n):
+	for i in range(1, n):
 
-		F[i] = f(n,i)
+		F[i] = f(n, i)
 
 	return F
 
 def SOR(K, F, anterior, w = 1.0):
+
+	"""Calcula los vectores solucion mediante el metodo iterativo SOR"""
 
 	respuesta = anterior[ : ]
 
@@ -87,6 +107,8 @@ def SOR(K, F, anterior, w = 1.0):
 	return respuesta
 
 def GaussSeidel(K, F, anterior, posicion):
+
+	"""Metodo iterativo Gauss-Seidel implementado para su uso en el metodo SOR"""
 
 	resultado = anterior[ : ]
 
@@ -103,9 +125,13 @@ def GaussSeidel(K, F, anterior, posicion):
 
 def normaInfinito(vector):
 
+	"""Implementacion de la norma infinito"""
+
 	return abs(max(vector, key = lambda x: abs(x)))
 
 def criterioConvergencia(actual, anterior, tolerancia = 0.01):
+
+	"""Implementacion del criterio de convergencia para el chequeo periodico en el ciclo SOR"""
 
 	resta = [actual[i] - anterior[i] for i in range(len(actual))]
 
@@ -117,7 +143,7 @@ def criterioConvergencia(actual, anterior, tolerancia = 0.01):
 
 def dumpLista(lista, dumpFile):
 
-	"""dump de los datos de la lista seleccionada, formateado para mejor exportacion"""
+	"""Dump de los datos de la lista seleccionada, formateado para mejor exportacion y visualizacion"""
 
 	for posicionElemento in range(len(lista)):
 
@@ -133,16 +159,9 @@ def dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dum
 
 	"""Dump de los datos necesarios para graficar"""
 
-	"""posicionMinimo = 0
-	minimo = iteracionesTotalesPorW[0]"""
-
 	for posicionElemento in range(len(factoresDeRelajacion)):
 
 		dumpFile.write("%d    %.2f\n" % (iteracionesTotalesPorW[posicionElemento], factoresDeRelajacion[posicionElemento]))
-
-		"""if iteracionesTotalesPorW[posicionElemento] < minimo:
-			minimo = iteracionesTotalesPorW[posicionElemento]
-			posicionMinimo = posicionElemento"""
 
 	dumpWOptimos.write("N = %d\n%.2f \n" % (n, wOptimo))
 
@@ -154,7 +173,9 @@ def restar(x, y):
 
 	return [x[i] - y[i] for i in range(len(x))]
 
-def calcularP(x0,x1,x2,x3):
+def calcularP(x0, x1, x2, x3):
+
+	"""Calculo del nivel de convergencia"""
 
 	deltax3 = normaInfinito(restar(x3, x2))
 	deltax2 = normaInfinito(restar(x2, x1))
@@ -164,20 +185,27 @@ def calcularP(x0,x1,x2,x3):
 
 def plotearW(datosW, tolerancia):
 
+	"""Funcion para los graficos mediante la libreria *matplotlib*"""
+
 	wOptimo, sol = datosW[0], datosW[1][-1]
 
-
-	plt.xlabel('Intervalo')
+	plt.xlabel('Intervalos de discretizacion')
 	plt.ylabel('Desviacion Y [m]')
-	plt.title('Desviacion de la viga en funcion de posicion x. N = {}, wOptimo = {}, Tolerancia = {}.'.format(len(sol) - 1, wOptimo, tolerancia))
-	plt.plot(sol, linestyle='--', marker='o')
+	plt.title('Desviacion de la viga en funcion de posicion x.\nN = {} - wOptimo = {} - Tolerancia = {}.'.format(len(sol) - 1, wOptimo, tolerancia))
+	plt.plot(sol, linestyle = '--', marker = 'o')
 	plt.show()
 
 def hallarWOptimo(tuplaN):
 
+	"""Se implementa para buscar el factor de relajacion optimo en base a la cruza de datos entre"""
+	"""las listas de factores de relajacion usados y la lista con la cantidad de iteraciones"""
+
 	return min(tuplaN, key = lambda x: len(x[1]))
 
-def resolverSistema(n, tuplaActual, dumpFile = None, iteracionesTotalesPorW = []):
+def resolverSistema(n, tuplaActual, dumpFile = None, iteracionesTotalesPorW = [], tolerancia = 0.01):
+
+	"""Implementacion de la funcion que incluye el metodo SOR y las funciones vistas anteriormente"""
+	"""para la resolucion del sistema"""
 
 	dimension = n + 1
 
@@ -194,7 +222,7 @@ def resolverSistema(n, tuplaActual, dumpFile = None, iteracionesTotalesPorW = []
 		dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(tuplaActual[0]) + "\n\n")
 		dumpLista(actual, dumpFile)
 
-	while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
+	while not (criterioConvergencia(actual, anterior, tolerancia)):
 
 		anterior = actual
 		actual = SOR(K, F, anterior, tuplaActual[0])
@@ -210,7 +238,7 @@ def resolverSistema(n, tuplaActual, dumpFile = None, iteracionesTotalesPorW = []
 
 	return iteracionesTotales
 
-def resolverSistemaRefinado(n, w, dumpFile = None, iteracionesTotalesPorW = []):
+def resolverSistemaRefinado(n, w, dumpFile = None, iteracionesTotalesPorW = [], tolerancia = 0.01):
 
 	"""Es como la funcion resolverSistema, pero esta se encarga de resolverlo para el refinamiento"""
 
@@ -226,7 +254,7 @@ def resolverSistemaRefinado(n, w, dumpFile = None, iteracionesTotalesPorW = []):
 
 	iteracionesTotales = 1
 
-	while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
+	while not (criterioConvergencia(actual, anterior, tolerancia)):
 
 		anterior = actual
 		actual = SOR(K, F, anterior, w)
@@ -242,20 +270,39 @@ def refinarW(n, tuplaActual, iteracionesTotalesPorW):
 
 	wOptimo = int(hallarWOptimo(tuplaActual)[0] * 100.0)
 
-	rangoRefinamiento = [(x / 100.0) for x in range(wOptimo - 4, wOptimo + 5, 1) if x > 0 and x != wOptimo]
+	if wOptimo == 100:
 
-	for i in range(len(rangoRefinamiento)):
-		if i == 0:
-			resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
-			posicionMinimo = i
+		rangoRefinamiento = [(x / 100.0) for x in range(wOptimo, wOptimo + 5, 1) if x > 0 and x != wOptimo]
 
-		else:
-			resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
-
-			if iteracionesRefinamiento[i] < iteracionesRefinamiento[posicionMinimo]:
+		for i in range(len(rangoRefinamiento)):
+			if i == 0:
+				resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
 				posicionMinimo = i
 
-	wOptimo = rangoRefinamiento[posicionMinimo]
+			else:
+				resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
+
+				if iteracionesRefinamiento[i] < iteracionesRefinamiento[posicionMinimo]:
+					posicionMinimo = i
+
+		wOptimo = rangoRefinamiento[posicionMinimo]
+
+	else:
+
+		rangoRefinamiento = [(x / 100.0) for x in range(wOptimo - 4, wOptimo + 5, 1) if x > 0 and x != wOptimo]
+
+		for i in range(len(rangoRefinamiento)):
+			if i == 0:
+				resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
+				posicionMinimo = i
+
+			else:
+				resolverSistemaRefinado(n, rangoRefinamiento[i], None, iteracionesRefinamiento)
+
+				if iteracionesRefinamiento[i] < iteracionesRefinamiento[posicionMinimo]:
+					posicionMinimo = i
+
+		wOptimo = rangoRefinamiento[posicionMinimo]
 
 	return [rangoRefinamiento, iteracionesRefinamiento, wOptimo]
 
@@ -265,15 +312,17 @@ def main():
 	dictDatos = {}
 
 	factoresDeRelajacion = [x / 100.0 for x in range(100, 200, 5)]
-	listaPorN = [(factor, []) for factor in factoresDeRelajacion]
+	
 	dumpWOptimos = open("WOptimos.txt", "w")
+
+	printIntegrantes()
 
 	while tomarIntervalos:
 
 		aux = int(input("Ingrese un intervalo mayor a 4, caso contrario finaliza lectura: "))
 
 		if aux > 4:
-			dictDatos[aux] = listaPorN[:]
+			dictDatos[aux] = [(factor, []) for factor in factoresDeRelajacion]
 
 		else:
 			tomarIntervalos = False
@@ -290,36 +339,6 @@ def main():
 
 		for t in tuplaActual:
 
-
-		# for factorDeRelajacion, solucionCadaIteracion in tuplaActual:
-
-		# 	dimension = n + 1
-
-		# 	K = crearMatrizK(n)
-
-		# 	F = crearF(n)
-
-		# 	anterior = [0.0] * dimension
-
-		# 	actual = SOR(K, F, anterior, w = factorDeRelajacion)
-		# 	solucionCadaIteracion.append(actual)
-
-		# 	dumpFile.write("Procesamiento del SEL con factor de relajacion = " + str(factorDeRelajacion) + "\n\n")
-		# 	dumpLista(actual, dumpFile)
-
-		# 	while not (criterioConvergencia(actual, anterior, tolerancia = 0.01)):
-
-		# 		anterior = actual
-		# 		actual = SOR(K, F, anterior, factorDeRelajacion)
-
-		# 		dumpLista(actual, dumpFile)
-
-		# 		solucionCadaIteracion.append(actual)
-
-		# 	iteracionesTotales = len(solucionCadaIteracion)
-
-		# 	iteracionesTotalesPorW.append(iteracionesTotales)
-
 			iteracionesTotales = resolverSistema(n, t, dumpFile, iteracionesTotalesPorW)
 
 			dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
@@ -327,13 +346,13 @@ def main():
 
 		datosRefinamiento = refinarW(n, tuplaActual, iteracionesTotalesPorW)
 
-		plt.plot(datosRefinamiento[0], datosRefinamiento[1], marker='o')
-
 		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n, datosRefinamiento[2])
 
-		plt.title('W vs. cantidad de iteraciones. N = {}. Tolerancia = {}'.format(n, 0.01))
-		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW, marker='o')
+		plt.title('W vs. cantidad de iteraciones. N = {} - Tolerancia = {}'.format(n, 0.01))
+		plt.plot(datosRefinamiento[0], datosRefinamiento[1], marker = 'o')
+		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW, marker = 'o')
 		plt.show()
+
 		dumpFile.close()
 
 	dumpWOptimos.close()
@@ -350,9 +369,7 @@ def main():
 				dictDatos2[key] = (float(dumpWOptimos.readline()), [])
 				break
 
-
 	dumpWOptimos.close()
-
 
 	for n, tuplaActual in dictDatos2.items():
 
@@ -360,7 +377,7 @@ def main():
 
 		iteracionesTotalesPorW = []
 
-		resolverSistema(n, tuplaActual, dumpFile, iteracionesTotalesPorW)
+		resolverSistema(n, tuplaActual, dumpFile, iteracionesTotalesPorW, 0.0001)
 
 		dumpFile.write("\n" + "Iteraciones totales: " + str(iteracionesTotales) + "\n\n")
 		dumpFile.write("----------------------------------------------------- \n\n")
