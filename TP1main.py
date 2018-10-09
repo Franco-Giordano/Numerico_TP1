@@ -308,6 +308,8 @@ def refinarW(n, tuplaActual, iteracionesTotalesPorW):
 
 def main():
 
+	"""Funcion main donde se ejecutara todo el programa previamente descrito en el informe"""
+
 	tomarIntervalos = True
 	dictDatos = {}
 
