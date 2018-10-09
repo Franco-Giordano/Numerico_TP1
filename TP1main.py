@@ -350,9 +350,9 @@ def main():
 
 		dumpDatosGrafico(iteracionesTotalesPorW, factoresDeRelajacion, dumpFile, dumpWOptimos, n, datosRefinamiento[2])
 
-		plt.title('W vs. cantidad de iteraciones. N = {} - Tolerancia = {}'.format(n, 0.01))
-		plt.plot(datosRefinamiento[0], datosRefinamiento[1], marker = 'o')
+		plt.title('W vs. cantidad de iteraciones.\nN = {} - Tolerancia = {}'.format(n, 0.01))
 		plt.plot(factoresDeRelajacion, iteracionesTotalesPorW, marker = 'o')
+		plt.plot(datosRefinamiento[0], datosRefinamiento[1], marker = 'o')
 		plt.show()
 
 		dumpFile.close()
